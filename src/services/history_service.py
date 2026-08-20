@@ -940,7 +940,7 @@ class HistoryService:
         labels = get_report_labels(report_language)
 
         def _label(en: str, zh: str, ko: str) -> str:
-            if report_language == "en":
+            if report_language in ("en", "it"):
                 return en
             if report_language == "ko":
                 return ko
