@@ -172,14 +172,14 @@ class MarketAnalyzer:
     def _get_market_scope_name(self, review_language: str | None = None) -> str:
         review_language = review_language or self._get_review_language()
         if self.region == "us":
-            return "US market" if review_language == "en" else "美股市场"
+            return "US market" if review_language in ("en", "it") else "美股市场"
         if self.region == "hk":
-            return "Hong Kong market" if review_language == "en" else "港股市场"
+            return "Hong Kong market" if review_language in ("en", "it") else "港股市场"
         if self.region == "jp":
-            return "Japan market" if review_language == "en" else "日本市场"
+            return "Japan market" if review_language in ("en", "it") else "日本市场"
         if self.region == "kr":
-            return "Korea market" if review_language == "en" else "韩国市场"
-        if review_language == "en":
+            return "Korea market" if review_language in ("en", "it") else "韩国市场"
+        if review_language in ("en", "it"):
             return "A-share market"
         return "A股市场"
 
@@ -369,19 +369,19 @@ Focus on index trend, liquidity, and sector rotation to shape the next-session t
 
     def _get_strategy_markdown_block(self, review_language: str | None = None) -> str:
         review_language = review_language or self._get_review_language()
-        if self.region == "hk" and review_language == "en":
+        if self.region == "hk" and review_language in ("en", "it"):
             return """### 6. Strategy Framework
 - **Trend Regime**: Classify the market as momentum, range, or risk-off based on HSI/HSTECH/HSCEI alignment.
 - **Capital Flows**: Track southbound flow direction and macro narrative for risk appetite signals.
 - **Sector Themes**: Focus on tech/internet platform persistence and financials/property policy sensitivity.
 """
-        if self.region == "jp" and review_language == "en":
+        if self.region == "jp" and review_language in ("en", "it"):
             return """### 6. Strategy Framework
 - **Trend Regime**: Classify Japan equities as advancing, range-bound, or defensive based on Nikkei 225/TOPIX alignment.
 - **Macro & FX**: Track yen, rates, and global risk appetite for exporter and financial-sector implications.
 - **Theme Signals**: Focus on semiconductor, automation, auto-chain, financial, and domestic-demand rotation.
 """
-        if self.region == "kr" and review_language == "en":
+        if self.region == "kr" and review_language in ("en", "it"):
             return """### 6. Strategy Framework
 - **Trend Regime**: Classify Korea equities as advancing, range-bound, or defensive based on KOSPI/KOSDAQ alignment.
 - **Technology Cycle**: Track semiconductor, AI hardware, and global technology read-through for market risk appetite.
@@ -393,7 +393,7 @@ Focus on index trend, liquidity, and sector rotation to shape the next-session t
 - **资金与情绪**：结合波动率、宽度和主题轮动评估风险偏好。
 - **主题主线**：识别可延续和可放大的行业主线与防守线索。
 """
-        if not (self.region == "cn" and review_language == "en"):
+        if not (self.region == "cn" and review_language in ("en", "it")):
             return self.strategy.to_markdown_block()
         return """### 6. Strategy Framework
 - **Trend Structure**: Determine whether the market is in an uptrend, range, or defensive phase.
@@ -403,7 +403,7 @@ Focus on index trend, liquidity, and sector rotation to shape the next-session t
 
     def _get_market_mood_text(self, mood_key: str, review_language: str | None = None) -> str:
         review_language = review_language or self._get_review_language()
-        if review_language == "en":
+        if review_language in ("en", "it"):
             mapping = {
                 "strong_up": "strong gains",
                 "mild_up": "moderate gains",
@@ -1162,7 +1162,7 @@ Focus on index trend, liquidity, and sector rotation to shape the next-session t
                     f"| {rank} | {item.get('name', '-')} | {self._format_signed_pct(item.get('change_pct'))} |"
                 )
 
-        if language == "en":
+        if language in ("en", "it"):
             append_ranking("#### Leading Industry Sectors", "Sector", overview.top_sectors)
             append_ranking("#### Lagging Industry Sectors", "Sector", overview.bottom_sectors)
             append_ranking("#### Leading Concept Themes", "Concept", overview.top_concepts)
@@ -1179,7 +1179,7 @@ Focus on index trend, liquidity, and sector rotation to shape the next-session t
         if not news:
             return ""
         language = self._get_review_language()
-        if language == "en":
+        if language in ("en", "it"):
             lines = [
                 "#### News Catalysts",
             ]
@@ -1204,7 +1204,7 @@ Focus on index trend, liquidity, and sector rotation to shape the next-session t
 
     @classmethod
     def _format_news_catalyst_line(cls, idx: int, item: Any, *, language: str = "zh") -> str:
-        fallback_title = "Untitled catalyst" if language == "en" else "未命名线索"
+        fallback_title = "Untitled catalyst" if language in ("en", "it") else "未命名线索"
         title = cls._compact_news_text(cls._get_news_field(item, "title"), limit=90) or fallback_title
         source = cls._compact_news_text(cls._get_news_field(item, "source"), limit=40)
         date_text = cls._compact_news_text(cls._get_news_field(item, "published_date"), limit=24)
@@ -1213,7 +1213,7 @@ Focus on index trend, liquidity, and sector rotation to shape the next-session t
         if url:
             title_text = f"[{title_text}]({url})"
         meta_parts = [part for part in (source, date_text) if part]
-        if language == "en":
+        if language in ("en", "it"):
             meta = f" ({' / '.join(meta_parts)})" if meta_parts else ""
         else:
             meta = f"（{' / '.join(meta_parts)}）" if meta_parts else ""
@@ -1337,7 +1337,7 @@ Focus on index trend, liquidity, and sector rotation to shape the next-session t
 
     def _build_output_template_sections(self, review_language: str) -> str:
         """Build LLM output sections according to market data capabilities."""
-        if review_language == "en":
+        if review_language in ("en", "it"):
             if self.profile.has_market_stats and self.profile.has_sector_rankings:
                 return """### 3. Fund Flows
 (Interpret what turnover, participation, and flow signals imply.)
@@ -1450,7 +1450,7 @@ Focus on index trend, liquidity, and sector rotation to shape the next-session t
         stats_block = ""
         sector_block = ""
         data_limits_block = ""
-        if review_language == "en":
+        if review_language in ("en", "it"):
             if self.profile.has_market_stats:
                 stats_block = f"""## Market Breadth
 - Advancers: {overview.up_count} | Decliners: {overview.down_count} | Flat: {overview.flat_count}
@@ -1500,7 +1500,7 @@ Concept lagging: {bottom_concepts_text if bottom_concepts_text else "N/A"}"""
             if not indices_text
             else ""
         )
-        if review_language == "en":
+        if review_language in ("en", "it"):
             data_no_indices_hint = (
                 "Note: Market data fetch failed. Rely mainly on [Market News] for qualitative analysis. Do not invent index levels."
                 if not indices_text
@@ -1543,7 +1543,7 @@ Concept lagging: {bottom_concepts_text if bottom_concepts_text else "N/A"}"""
             else "报告要像交易员盘后工作台：先给结论，再按指数、新闻催化和计划展开"
         )
 
-        if review_language == "en":
+        if review_language in ("en", "it"):
             report_title = self._get_review_title(overview.date).removeprefix("## ").strip()
             return f"""You are a professional {self._get_market_scope_name('en')} analyst. Please produce a concise market recap report based on the data below.
 
@@ -1687,13 +1687,13 @@ Output the report content directly, no extra commentary.
             indices_text += f"- **{idx.name}**: {idx.current:.2f} ({marker} {idx.change_pct:+.2f}%)\n"
         
         # 板块信息
-        separator = ", " if template_language == "en" else "、"
+        separator = ", " if template_language in ("en", "it") else "、"
         top_text = separator.join([s['name'] for s in overview.top_sectors[:3]])
         bottom_text = separator.join([s['name'] for s in overview.bottom_sectors[:3]])
         top_concept_text = separator.join([s['name'] for s in overview.top_concepts[:3]])
         bottom_concept_text = separator.join([s['name'] for s in overview.bottom_concepts[:3]])
 
-        if template_language == "en":
+        if template_language in ("en", "it"):
             stats_section = ""
             if self._supports_market_light() or self.profile.has_market_stats:
                 stats_block = self._build_stats_block(overview)
