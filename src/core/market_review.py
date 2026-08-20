@@ -114,6 +114,17 @@ def _collect_market_light_snapshot(
 
 def _get_market_review_text(language: str) -> dict[str, str]:
     normalized = normalize_report_language(language)
+    if normalized == "it":
+        return {
+            "root_title": "# 🎯 Riepilogo di mercato",
+            "push_title": "🎯 Riepilogo di mercato",
+            "cn_title": "# Riepilogo mercato A-share",
+            "us_title": "# Riepilogo mercato USA",
+            "hk_title": "# Riepilogo mercato Hong Kong",
+            "jp_title": "# Riepilogo mercato Giappone",
+            "kr_title": "# Riepilogo mercato Corea",
+            "separator": "> Segue il riepilogo del mercato successivo",
+        }
     if normalized == "en":
         return {
             "root_title": "# 🎯 Market Review",
