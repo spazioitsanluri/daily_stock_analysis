@@ -16,11 +16,47 @@ from email.utils import formataddr
 import smtplib
 
 from data_provider.base import normalize_stock_code
-from src.config import Config
+from src.config import Config, get_config
+from src.report_language import normalize_report_language
 from src.formatters import markdown_to_html_document, strip_hidden_markdown_metadata
 
 
 logger = logging.getLogger(__name__)
+
+
+_EMAIL_SUBJECT_BY_LANGUAGE = {
+    "zh": "📈 股票智能分析报告",
+    "en": "📈 Stock Analysis Report",
+    "ko": "📈 주식 분석 리포트",
+    "it": "📈 Report di analisi azionaria",
+}
+
+_EMAIL_IMAGE_HINT_BY_LANGUAGE = {
+    "zh": "报告已生成，详见下方图片。",
+    "en": "The report has been generated; see the image below.",
+    "ko": "리포트가 생성되었습니다. 아래 이미지를 확인하세요.",
+    "it": "Report generato: vedi l'immagine qui sotto.",
+}
+
+
+def _report_language() -> str:
+    try:
+        return normalize_report_language(getattr(get_config(), "report_language", "zh"))
+    except Exception:
+        import os as _os
+        return normalize_report_language(_os.environ.get("REPORT_LANGUAGE") or "zh")
+
+
+def _localized_email_subject(date_str: str) -> str:
+    language = _report_language()
+    prefix = _EMAIL_SUBJECT_BY_LANGUAGE.get(language, _EMAIL_SUBJECT_BY_LANGUAGE["en"])
+    return f"{prefix} - {date_str}"
+
+
+def _localized_image_hint() -> str:
+    language = _report_language()
+    return _EMAIL_IMAGE_HINT_BY_LANGUAGE.get(language, _EMAIL_IMAGE_HINT_BY_LANGUAGE["en"])
+
 
 
 # SMTP 服务器配置（自动识别）
@@ -163,7 +199,7 @@ class EmailSender:
             # 生成主题
             if subject is None:
                 date_str = datetime.now().strftime('%Y-%m-%d')
-                subject = f"📈 股票智能分析报告 - {date_str}"
+                subject = _localized_email_subject(date_str)
 
             sanitized_content = strip_hidden_markdown_metadata(content).strip()
             
@@ -237,14 +273,14 @@ class EmailSender:
         server: Optional[smtplib.SMTP] = None
         try:
             date_str = datetime.now().strftime('%Y-%m-%d')
-            subject = f"📈 股票智能分析报告 - {date_str}"
+            subject = _localized_email_subject(date_str)
             msg = MIMEMultipart('related')
             msg['Subject'] = Header(subject, 'utf-8')
             msg['From'] = self._format_sender_address(sender)
             msg['To'] = ', '.join(receivers)
 
             alt = MIMEMultipart('alternative')
-            alt.attach(MIMEText('报告已生成，详见下方图片。', 'plain', 'utf-8'))
+            alt.attach(MIMEText(_localized_image_hint(), 'plain', 'utf-8'))
             html_body = (
                 '<p>报告已生成，详见下方图片（点击可查看大图）：</p>'
                 '<p><img src="cid:report-image" alt="股票分析报告" style="max-width:100%%;" /></p>'
