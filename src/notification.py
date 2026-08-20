@@ -90,6 +90,26 @@ from src.notification_sender import (
 
 logger = logging.getLogger(__name__)
 
+_WESTERN_CURRENCY_SUFFIX = {
+    "USD": "USD",
+    "HKD": "HKD",
+    "CNY": "CNY",
+    "RMB": "CNY",
+    "CNH": "CNY",
+    "TWD": "TWD",
+}
+
+
+def _report_language_is_chinese() -> bool:
+    """True solo quando il report esce in cinese: altrove si usano unita occidentali."""
+    try:
+        from src.config import get_config as _get_config
+        return normalize_report_language(getattr(_get_config(), "report_language", "zh")) == "zh"
+    except Exception:
+        import os as _os
+        return normalize_report_language(_os.environ.get("REPORT_LANGUAGE") or "zh") == "zh"
+
+
 
 def _safe_float(value: Any) -> Optional[float]:
     """Best-effort float conversion; handles `"3.2%"` and `"1,234"` shapes."""
@@ -2134,6 +2154,13 @@ class NotificationService(
             return "N/A"
         sign = "-" if amount < 0 else ""
         abs_amount = abs(amount)
+        if not _report_language_is_chinese():
+            code = _WESTERN_CURRENCY_SUFFIX.get((currency or "").upper(), "CNY")
+            if abs_amount >= 1e9:
+                return f"{sign}{abs_amount / 1e9:.2f} mld {code}"
+            if abs_amount >= 1e6:
+                return f"{sign}{abs_amount / 1e6:.2f} mln {code}"
+            return f"{sign}{abs_amount:.0f} {code}"
         suffix = cls._CURRENCY_SUFFIX.get((currency or "").upper(), "元")
         if abs_amount >= 1e8:
             return f"{sign}{abs_amount / 1e8:.2f} 亿{suffix}"
@@ -2156,6 +2183,9 @@ class NotificationService(
             return "N/A"
         if amount != amount:  # NaN
             return "N/A"
+        if not _report_language_is_chinese():
+            code = _WESTERN_CURRENCY_SUFFIX.get((currency or "").upper(), "CNY")
+            return f"{amount:.4f} {code}"
         suffix = cls._CURRENCY_SUFFIX.get((currency or "").upper(), "元")
         return f"{amount:.4f} {suffix}"
 
@@ -2345,6 +2375,12 @@ class NotificationService(
             return "N/A"
         sign = "+" if amount > 0 else ("-" if amount < 0 else "")
         a = abs(amount)
+        if not _report_language_is_chinese():
+            if a >= 1e9:
+                return f"{sign}{a / 1e9:.2f} mld az."
+            if a >= 1e6:
+                return f"{sign}{a / 1e6:.2f} mln az."
+            return f"{sign}{a:.0f} az."
         if a >= 1e8:
             return f"{sign}{a / 1e8:.2f} 亿股"
         if a >= 1e4:
