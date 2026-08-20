@@ -478,7 +478,7 @@ def _build_language_section(report_language: str, *, chat_mode: bool = False) ->
     """Build output-language guidance for the agent prompt."""
     normalized = normalize_report_language(report_language)
     if chat_mode:
-        if normalized == "en":
+        if normalized in ("en", "it"):
             return """
 ## Output Language
 
@@ -492,7 +492,7 @@ def _build_language_section(report_language: str, *, chat_mode: bool = False) ->
 - 若输出 JSON，键名保持不变，所有面向用户的文本值使用中文。
 """
 
-    if normalized == "en":
+    if normalized in ("en", "it"):
         return """
 ## Output Language
 
@@ -862,7 +862,7 @@ class AgentExecutor:
                 parts.append(f"\n股票代码: {context['stock_code']}")
             if context.get("report_type"):
                 parts.append(f"报告类型: {context['report_type']}")
-            if report_language == "en":
+            if report_language in ("en", "it"):
                 parts.append("输出语言: English（所有 JSON 键名保持不变，所有面向用户的文本值使用英文）")
             elif report_language == "ko":
                 parts.append("출력 언어: 한국어（모든 JSON 키는 그대로 유지하고, 사용자 노출 텍스트 값은 한국어로 작성）")
