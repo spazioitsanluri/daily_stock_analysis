@@ -51,6 +51,7 @@ _PUBLIC_SOURCE_LABELS_EN = {
 _MARKET_STATUS_PREFIX = {
     "zh": "市场状态",
     "en": "Market status",
+    "it": "Stato del mercato",
 }
 _MARKET_LABELS_ZH = {
     "cn": "A股",
@@ -72,6 +73,21 @@ _PHASE_LABELS_ZH = {
     "postmarket": "盘后",
     "non_trading": "非交易日",
     "unknown": "阶段未知",
+}
+_MARKET_LABELS_IT = {
+    "cn": "Cina A",
+    "hk": "Hong Kong",
+    "us": "USA",
+    "tw": "Taiwan",
+}
+_PHASE_LABELS_IT = {
+    "premarket": "Pre-apertura",
+    "intraday": "Seduta in corso",
+    "lunch_break": "Pausa pranzo",
+    "closing_auction": "Prossimo alla chiusura",
+    "postmarket": "Dopo la chiusura",
+    "non_trading": "Giorno non di borsa",
+    "unknown": "Fase non nota",
 }
 _PHASE_LABELS_EN = {
     "premarket": "Pre-market",
@@ -191,7 +207,8 @@ def format_public_phase_pack_excerpt(
     if not phase_summary and not overview:
         return ""
     # Korean reuses the English structural summary; output language is set by directive.
-    lang = "en" if str(report_language or "").lower().startswith(("en", "ko", "it")) else "zh"
+    _raw_language = str(report_language or "").lower()
+    lang = "it" if _raw_language.startswith("it") else ("en" if _raw_language.startswith(("en", "ko")) else "zh")
     source_label = _source_label(source, lang)
 
     lines: List[str] = []
@@ -199,7 +216,7 @@ def format_public_phase_pack_excerpt(
         phase = _safe_text(phase_summary.get("phase")) or "unknown"
         market = _safe_text(phase_summary.get("market"))
         trigger_source = _safe_text(phase_summary.get("trigger_source"))
-        if lang == "en":
+        if lang in ("en", "it"):
             parts = [f"phase: {phase}"]
             if market:
                 parts.append(f"market: {market}")
@@ -248,19 +265,21 @@ def format_public_market_status_line(
         return ""
 
     # Korean reuses the English structural summary; output language is set by directive.
-    lang = "en" if str(report_language or "").lower().startswith(("en", "ko", "it")) else "zh"
-    phase_labels = _PHASE_LABELS_EN if lang == "en" else _PHASE_LABELS_ZH
-    market_labels = _MARKET_LABELS_EN if lang == "en" else _MARKET_LABELS_ZH
+    _raw_language = str(report_language or "").lower()
+    lang = "it" if _raw_language.startswith("it") else ("en" if _raw_language.startswith(("en", "ko")) else "zh")
+    phase_labels = _PHASE_LABELS_IT if lang == "it" else (_PHASE_LABELS_EN if lang == "en" else _PHASE_LABELS_ZH)
+    market_labels = _MARKET_LABELS_IT if lang == "it" else (_MARKET_LABELS_EN if lang == "en" else _MARKET_LABELS_ZH)
     phase_label = phase_labels.get(phase, phase)
     market = _safe_text(phase_summary.get("market"))
     market_key = market.lower()
     if market_key:
-        market_label = market_labels.get(market_key, market.upper() if lang == "en" else market)
+        market_label = market_labels.get(market_key, market.upper() if lang in ("en", "it") else market)
         value = f"{market_label} · {phase_label}"
     else:
         value = phase_label
-    separator = ": " if lang == "en" else "："
-    return f"{_MARKET_STATUS_PREFIX[lang]}{separator}{value}"
+    separator = ": " if lang in ("en", "it") else "："
+    prefix = _MARKET_STATUS_PREFIX.get(lang) or _MARKET_STATUS_PREFIX["en"]
+    return f"{prefix}{separator}{value}"
 
 
 def _as_mapping(value: Any) -> Optional[Mapping[str, Any]]:
@@ -284,7 +303,7 @@ def _source_label(value: Any, lang: str) -> Optional[str]:
     source = _safe_text(value)
     if not source:
         return None
-    labels = _PUBLIC_SOURCE_LABELS_EN if lang == "en" else _PUBLIC_SOURCE_LABELS_ZH
+    labels = _PUBLIC_SOURCE_LABELS_EN if lang in ("en", "it") else _PUBLIC_SOURCE_LABELS_ZH
     return labels.get(source, source)
 
 
