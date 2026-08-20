@@ -107,10 +107,39 @@ from src.market_structure_prompt import format_market_structure_prompt_section
 logger = logging.getLogger(__name__)
 
 
+_ITALIAN_OUTPUT_OVERRIDE = """
+
+## Lingua di output (priorita massima, prevale su qualsiasi istruzione precedente)
+
+- Mantieni invariate tutte le chiavi JSON: non tradurre i nomi delle chiavi.
+- `decision_type` deve restare `buy`, `hold` oppure `sell`.
+- Ogni valore testuale destinato a un lettore umano deve essere scritto in italiano.
+- Questo vale per `stock_name`, `trend_prediction`, `operation_advice`, `confidence_level`,
+  tutti i testi annidati del cruscotto, le voci di checklist e ogni campo di sintesi.
+- Usa la denominazione italiana corrente della societa solo se ne sei certo; altrimenti
+  mantieni il nome quotato originale senza inventarne uno.
+- Se un dato manca, spiegalo in italiano: non usare ne inglese ne cinese.
+"""
+
+
+def _apply_italian_output_override(text: Optional[str]) -> Optional[str]:
+    """Forza l'italiano quando REPORT_LANGUAGE=it, a valle di ogni prompt builder."""
+    if not text:
+        return text
+    try:
+        if normalize_report_language(getattr(config, "report_language", "zh")) != "it":
+            return text
+    except Exception:
+        return text
+    if "## Lingua di output" in text:
+        return text
+    return text + _ITALIAN_OUTPUT_OVERRIDE
+
+
 def _localized_text(language: Any, *, en: str, zh: str, ko: str) -> str:
     """Pick a deterministic fallback string for the report language (zh/en/ko)."""
     normalized = normalize_report_language(language)
-    if normalized == "en":
+    if normalized in ("en", "it"):
         return en
     if normalized == "ko":
         return ko
@@ -1577,7 +1606,7 @@ def _set_structural_hold_wording(
     if advice_key == "range":
         if language == "zh" and "震荡" not in str(result.trend_prediction):
             result.trend_prediction = "震荡"
-        elif language == "en":
+        elif language in ("en", "it"):
             result.trend_prediction = "Sideways"
         elif language == "ko":
             result.trend_prediction = "횡보"
@@ -2369,7 +2398,7 @@ class GeminiAnalyzer:
                 .replace("{default_skill_policy_section}", default_skill_policy_section)
                 .replace("{skills_section}", skills_section)
             )
-        if lang == "en":
+        if lang in ("en", "it"):
             return base_prompt + """
 
 ## Output Language (highest priority)
@@ -2982,6 +3011,8 @@ class GeminiAnalyzer:
         audit_context: Optional[Dict[str, Any]] = None,
     ) -> Tuple[str, str, Dict[str, Any]]:
         """Compatibility wrapper around the configured generation backend."""
+        prompt = _apply_italian_output_override(prompt)
+        system_prompt = _apply_italian_output_override(system_prompt)
         preflight_error = self.get_generation_backend_config_error()
         if preflight_error is not None and not self._can_use_generation_fallback(preflight_error):
             raise preflight_error
@@ -3415,7 +3446,7 @@ class GeminiAnalyzer:
             field = str(details.get("field") or "GENERATION_BACKEND")
             requested_backend = str(details.get("requested_backend") or backend_error.backend)
             reason = str(details.get("reason") or backend_error.error_code.value)
-            if report_language == "en":
+            if report_language in ("en", "it"):
                 summary = (
                     "AI analysis is unavailable because the generation backend "
                     f"cannot start: {backend_error.error_code.value}."
@@ -4147,7 +4178,7 @@ class GeminiAnalyzer:
  
 请输出完整的 JSON 格式决策仪表盘。"""
 
-        if report_language == "en":
+        if report_language in ("en", "it"):
             prompt += """
 
 ### Output language requirements (highest priority)
