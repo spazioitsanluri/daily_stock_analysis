@@ -344,7 +344,7 @@ def _poster_language(
     if isinstance(payload, Mapping):
         raw_language = payload.get("report_language") or payload.get("language")
         normalized = str(raw_language or "").strip().lower().replace("_", "-")
-        if normalized.startswith("en"):
+        if normalized.startswith(("en", "it")):
             return "en"
         if normalized.startswith("ko"):
             return "ko"
