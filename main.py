@@ -75,6 +75,40 @@ from src.logging_config import setup_logging
 from src.brokers.futu.portfolio import FutuPortfolioError
 from data_provider.base import canonical_stock_code
 from src.services.stock_list_parser import split_stock_list
+
+_MARKET_REVIEW_TITLE_BY_LANGUAGE = {
+    "zh": "大盘复盘",
+    "en": "Market Review",
+    "ko": "시황 리뷰",
+    "it": "Riepilogo di mercato",
+}
+
+_DASHBOARD_TITLE_BY_LANGUAGE = {
+    "zh": "个股决策仪表盘",
+    "en": "Stock Decision Dashboard",
+    "ko": "종목 결정 대시보드",
+    "it": "Cruscotto decisionale dei titoli",
+}
+
+
+def _report_language_code() -> str:
+    """Risolve REPORT_LANGUAGE per i titoli mostrati nel report e nelle email."""
+    from src.report_language import normalize_report_language
+    try:
+        return normalize_report_language(getattr(get_config(), "report_language", "zh"))
+    except Exception:
+        return normalize_report_language(os.environ.get("REPORT_LANGUAGE") or "zh")
+
+
+def _market_review_title() -> str:
+    language = _report_language_code()
+    return _MARKET_REVIEW_TITLE_BY_LANGUAGE.get(language, _MARKET_REVIEW_TITLE_BY_LANGUAGE["en"])
+
+
+def _dashboard_title() -> str:
+    language = _report_language_code()
+    return _DASHBOARD_TITLE_BY_LANGUAGE.get(language, _DASHBOARD_TITLE_BY_LANGUAGE["en"])
+
 from src.services.stock_code_utils import resolve_index_stock_code_for_analysis
 
 
@@ -668,12 +702,11 @@ def _save_reused_market_review_report(
     body = str(market_report or "").strip()
     if not body:
         return
-    title = (
-        "# 🎯 Market Review"
-        if str(getattr(config, "report_language", "zh")).strip().lower() == "en"
-        else "# 🎯 大盘复盘"
+    title = f"# 🎯 {_market_review_title()}"
+    _known_titles = tuple(
+        f"# 🎯 {value}" for value in _MARKET_REVIEW_TITLE_BY_LANGUAGE.values()
     )
-    if not any(body.startswith(item) for item in ("# 🎯 大盘复盘", "# 🎯 Market Review")):
+    if not any(body.startswith(item) for item in _known_titles):
         body = f"{title}\n\n{body}"
     try:
         date_str = datetime.now().strftime('%Y%m%d')
@@ -970,7 +1003,7 @@ def run_full_analysis(
                     and pipeline.notifier.is_available()
                 ):
                     if pipeline.notifier.send(
-                        f"# 📈 大盘复盘\n\n{market_report}",
+                        f"# 📈 {_market_review_title()}\n\n{market_report}",
                         email_send_to_all=True,
                         route_type="report",
                     ):
@@ -1055,13 +1088,13 @@ def run_full_analysis(
         if merge_notification and (results or market_report) and not args.no_notify:
             parts = []
             if market_report:
-                parts.append(f"# 📈 大盘复盘\n\n{market_report}")
+                parts.append(f"# 📈 {_market_review_title()}\n\n{market_report}")
             if results:
                 dashboard_content = pipeline.notifier.generate_aggregate_report(
                     results,
                     getattr(config, 'report_type', 'simple'),
                 )
-                parts.append(f"# 🚀 个股决策仪表盘\n\n{dashboard_content}")
+                parts.append(f"# 🚀 {_dashboard_title()}\n\n{dashboard_content}")
             if parts:
                 combined_content = "\n\n---\n\n".join(parts)
                 if pipeline.notifier.is_available():
@@ -1093,14 +1126,14 @@ def run_full_analysis(
                 # 1. 准备标题 "01-01 13:01大盘复盘"
                 tz_cn = timezone(timedelta(hours=8))
                 now = datetime.now(tz_cn)
-                doc_title = f"{now.strftime('%Y-%m-%d %H:%M')} 大盘复盘"
+                doc_title = f"{now.strftime('%Y-%m-%d %H:%M')} {_market_review_title()}"
 
                 # 2. 准备内容 (拼接个股分析和大盘复盘)
                 full_content = ""
 
                 # 添加大盘复盘内容（如果有）
                 if market_report:
-                    full_content += f"# 📈 大盘复盘\n\n{market_report}\n\n---\n\n"
+                    full_content += f"# 📈 {_market_review_title()}\n\n{market_report}\n\n---\n\n"
 
                 # 添加个股决策仪表盘（使用 NotificationService 生成，按 report_type 分支）
                 if results:
@@ -1108,7 +1141,7 @@ def run_full_analysis(
                         results,
                         getattr(config, 'report_type', 'simple'),
                     )
-                    full_content += f"# 🚀 个股决策仪表盘\n\n{dashboard_content}"
+                    full_content += f"# 🚀 {_dashboard_title()}\n\n{dashboard_content}"
 
                 # 3. 创建文档
                 doc_url = feishu_doc.create_daily_doc(doc_title, full_content)
