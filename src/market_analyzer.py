@@ -214,7 +214,17 @@ class MarketAnalyzer:
         return "🟢" if change_pct > 0 else "🔴"
 
     def _get_review_title(self, date: str) -> str:
-        if self._get_review_language() == "en":
+        review_language = self._get_review_language()
+        if review_language == "it":
+            market_names_it = {
+                "us": "Riepilogo mercato USA",
+                "hk": "Riepilogo mercato Hong Kong",
+                "jp": "Riepilogo mercato Giappone",
+                "kr": "Riepilogo mercato Corea",
+            }
+            market_name = market_names_it.get(self.region, "Riepilogo mercato A-share")
+            return f"## {date} {market_name}"
+        if review_language == "en":
             market_names = {
                 "us": "US Market Recap",
                 "hk": "HK Market Recap",
@@ -1418,7 +1428,13 @@ Focus on index trend, liquidity, and sector rotation to shape the next-session t
         review_language = self._get_review_language()
         # Korean reuses the English structural template but the model is told to
         # write the entire shell, headings, guidance and conclusion in Korean.
-        shell_language_label = "Korean (한국어)" if self._get_output_language() == "ko" else "English"
+        _output_language = self._get_output_language()
+        if _output_language == "ko":
+            shell_language_label = "Korean (한국어)"
+        elif _output_language == "it":
+            shell_language_label = "Italian (italiano)"
+        else:
+            shell_language_label = "English"
 
         # 指数行情信息（简洁格式，不用emoji）
         indices_text = ""
