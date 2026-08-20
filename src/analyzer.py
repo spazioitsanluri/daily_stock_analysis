@@ -122,6 +122,58 @@ _ITALIAN_OUTPUT_OVERRIDE = """
 """
 
 
+
+_RESIDUAL_CN_TO_IT = [
+    ("非交易日观察", "Osservazione in giorno non di borsa"),
+    ("收盘前风控", "Controllo del rischio prima della chiusura"),
+    ("盘后复盘", "Analisi dopo la chiusura"),
+    ("午间确认", "Conferma a meta giornata"),
+    ("盘中跟踪", "Monitoraggio durante la seduta"),
+    ("盘前计划", "Piano di pre-apertura"),
+    ("【最新消息】", "Ultime notizie: "),
+    ("立即行动", "Azione immediata"),
+    ("强烈看多", "Fortemente rialzista"),
+    ("强烈看空", "Fortemente ribassista"),
+    ("强烈买入", "Acquisto forte"),
+    ("强烈卖出", "Vendita forte"),
+    ("多头排列", "Allineamento rialzista"),
+    ("空头排列", "Allineamento ribassista"),
+    ("洗盘观察", "Fase di scuotimento, osservare"),
+    ("今日内", "Entro oggi"),
+    ("本周内", "Entro questa settimana"),
+    ("不急", "Nessuna urgenza"),
+    ("观望", "Osservare"),
+    ("观察", "Osservare"),
+    ("买入", "Acquisto"),
+    ("卖出", "Vendere"),
+    ("持有", "Mantenere"),
+    ("加仓", "Incrementare"),
+    ("减仓", "Ridurre"),
+    ("回避", "Evitare"),
+    ("预警", "Allerta"),
+    ("空仓", "Nessuna posizione"),
+    ("持仓", "In portafoglio"),
+    ("看多", "Rialzista"),
+    ("看空", "Ribassista"),
+    ("震荡", "Laterale"),
+]
+
+
+def _translate_residual_chinese(value: Any) -> Any:
+    """Traduce in italiano i valori enumerati che il modello copia dal prompt cinese."""
+    if isinstance(value, str):
+        translated = value
+        for source, target in _RESIDUAL_CN_TO_IT:
+            if source in translated:
+                translated = translated.replace(source, target)
+        return translated
+    if isinstance(value, list):
+        return [_translate_residual_chinese(item) for item in value]
+    if isinstance(value, dict):
+        return {key: _translate_residual_chinese(item) for key, item in value.items()}
+    return value
+
+
 def _apply_italian_output_override(text: Optional[str]) -> Optional[str]:
     """Forza l'italiano quando REPORT_LANGUAGE=it, a valle di ogni prompt builder."""
     if not text:
@@ -4220,6 +4272,14 @@ class GeminiAnalyzer:
         """格式化成交量显示"""
         if volume is None:
             return 'N/A'
+        if normalize_report_language(
+            getattr(self._get_runtime_config(), "report_language", "zh")
+        ) != "zh":
+            if volume >= 1e9:
+                return f"{volume / 1e9:.2f} mld az."
+            if volume >= 1e6:
+                return f"{volume / 1e6:.2f} mln az."
+            return f"{volume:.0f} az."
         if volume >= 1e8:
             return f"{volume / 1e8:.2f} 亿股"
         elif volume >= 1e4:
@@ -4552,6 +4612,8 @@ class GeminiAnalyzer:
             try:
                 _json_str, data = self._extract_analysis_json_object(response_text)
                 self._validate_analysis_minimal_contract(data)
+                if report_language == "it":
+                    data = _translate_residual_chinese(data)
             except Exception as exc:
                 logger.warning("无法从响应中提取唯一有效 JSON，标记为解析失败: %s", exc)
                 return self._parse_text_response(response_text, code, name)
