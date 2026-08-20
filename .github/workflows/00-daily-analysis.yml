@@ -1,9 +1,11 @@
 name: Analisi azionaria giornaliera
 
 on:
-  # Trigger programmato - ogni giorno alle 18:00 ora di Pechino (UTC 10:00) = 12:00 ora italiana
-  schedule:
-    - cron: '0 10 * * 1-5'     # dal lunedi al venerdi, UTC 10:00 = 18:00 Pechino = 12:00 Italia
+  # SCHEDULER DISATTIVATO su richiesta: esecuzione solo manuale.
+  # Per riattivarlo togliere il commento alle due righe seguenti.
+  # 12:00 ora italiana -> cron 0 10 * * 1-5 | dopo la chiusura USA -> cron 0 21 * * 1-5
+  # schedule:
+  #   - cron: '0 10 * * 1-5'
   
   # Trigger manuale
   workflow_dispatch:
