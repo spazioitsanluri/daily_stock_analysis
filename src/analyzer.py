@@ -127,9 +127,13 @@ def _apply_italian_output_override(text: Optional[str]) -> Optional[str]:
     if not text:
         return text
     try:
-        if normalize_report_language(getattr(config, "report_language", "zh")) != "it":
-            return text
+        language = getattr(get_config(), "report_language", None)
     except Exception:
+        language = None
+    if not language:
+        import os as _os
+        language = _os.environ.get("REPORT_LANGUAGE")
+    if normalize_report_language(language or "zh") != "it":
         return text
     if "## Lingua di output" in text:
         return text
