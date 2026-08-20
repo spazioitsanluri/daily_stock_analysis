@@ -8,7 +8,7 @@ from typing import Any, Dict, Optional
 
 from src.schemas.decision_scale import signal_key_for_score
 
-SUPPORTED_REPORT_LANGUAGES = ("zh", "en", "ko")
+SUPPORTED_REPORT_LANGUAGES = ("zh", "en", "ko", "it")
 
 _REPORT_LANGUAGE_ALIASES = {
     "zh-cn": "zh",
@@ -28,6 +28,10 @@ _REPORT_LANGUAGE_ALIASES = {
     "kr": "ko",
     "ko-kr": "ko",
     "ko_kr": "ko",
+    "italian": "it",
+    "italiano": "it",
+    "it-it": "it",
+    "it_it": "it",
 }
 
 _OPERATION_ADVICE_CANONICAL_MAP = {
@@ -1336,3 +1340,222 @@ def get_sentiment_label(score: int, language: Optional[str]) -> str:
     if score >= 20:
         return "悲观"
     return "极度悲观"
+
+# ============================================================
+# Italian (it) report language layer
+# "it" eredita la struttura inglese e sovrascrive le stringhe visibili.
+# ============================================================
+
+_IT_OPERATION_ADVICE = {
+    "strong_buy": "Acquisto forte",
+    "buy": "Acquisto",
+    "hold": "Mantenere",
+    "watch": "Osservare",
+    "reduce": "Ridurre",
+    "sell": "Vendere",
+    "strong_sell": "Vendita forte",
+}
+_IT_TREND_PREDICTION = {
+    "strong_bullish": "Fortemente rialzista",
+    "bullish": "Rialzista",
+    "sideways": "Laterale",
+    "bearish": "Ribassista",
+    "strong_bearish": "Fortemente ribassista",
+}
+_IT_SIMPLE_LEVELS = {
+    "high": "Alta",
+    "medium": "Media",
+    "low": "Bassa",
+    "strong": "Forte",
+    "weak": "Debole",
+    "neutral": "Neutrale",
+    "none": "Nessuno",
+    "buy": "Acquisto",
+    "sell": "Vendita",
+    "hold": "Mantenere",
+    "watch": "Osservare",
+    "bullish": "Rialzista",
+    "bearish": "Ribassista",
+    "healthy": "Solido",
+    "unhealthy": "Fragile",
+    "unknown": "Non disponibile",
+    "mixed": "Contrastante",
+    "consensus": "Consenso",
+    "divergent": "Divergente",
+    "conflict": "Conflitto",
+    "minor": "Lieve",
+    "moderate": "Moderato",
+    "severe": "Grave",
+}
+
+_IT_LABELS = {
+    'dashboard_title': 'Cruscotto decisionale',
+    'brief_title': 'Sintesi decisionale',
+    'analyzed_prefix': 'Analizzati',
+    'stock_unit': 'titoli',
+    'stock_unit_compact': 'titoli',
+    'buy_label': 'Acquisto',
+    'watch_label': 'Osservare',
+    'sell_label': 'Vendere',
+    'summary_heading': 'Riepilogo',
+    'info_heading': 'Aggiornamenti chiave',
+    'sentiment_summary_label': 'Sentiment',
+    'earnings_outlook_label': 'Prospettive utili',
+    'risk_alerts_label': 'Allarmi di rischio',
+    'positive_catalysts_label': 'Catalizzatori positivi',
+    'latest_news_label': 'Ultime notizie',
+    'core_conclusion_heading': 'Conclusione principale',
+    'one_sentence_label': 'Decisione in una riga',
+    'time_sensitivity_label': 'Orizzonte temporale',
+    'default_time_sensitivity': 'Questa settimana',
+    'position_status_label': 'Posizione',
+    'action_advice_label': 'Azione',
+    'no_position_label': 'Nessuna posizione',
+    'has_position_label': 'In portafoglio',
+    'continue_holding': 'Mantenere la posizione',
+    'market_snapshot_heading': 'Fotografia di mercato',
+    'close_label': 'Chiusura',
+    'prev_close_label': 'Chiusura prec.',
+    'open_label': 'Apertura',
+    'high_label': 'Massimo',
+    'low_label': 'Minimo',
+    'change_pct_label': 'Var. %',
+    'change_amount_label': 'Variazione',
+    'amplitude_label': 'Escursione',
+    'volume_label': 'Volume',
+    'amount_label': 'Controvalore',
+    'current_price_label': 'Prezzo',
+    'volume_ratio_label': 'Volume ratio',
+    'turnover_rate_label': 'Tasso di rotazione',
+    'source_label': 'Fonte',
+    'data_perspective_heading': 'Lettura dei dati',
+    'ma_alignment_label': 'Allineamento medie',
+    'bullish_alignment_label': 'Allineamento rialzista',
+    'yes_label': 'Si',
+    'no_label': 'No',
+    'none_label': 'Nessuno',
+    'trend_strength_label': 'Forza del trend',
+    'price_metrics_label': 'Metriche di prezzo',
+    'ma5_label': 'MM5',
+    'ma10_label': 'MM10',
+    'ma20_label': 'MM20',
+    'bias_ma5_label': 'Scostamento (MM5)',
+    'support_level_label': 'Supporto',
+    'resistance_level_label': 'Resistenza',
+    'chip_label': 'Struttura dei chip',
+    'phase_decision_heading': 'Guardrail decisionale di fase',
+    'action_window_label': 'Finestra operativa',
+    'immediate_action_label': 'Azione immediata',
+    'watch_conditions_label': 'Condizioni da monitorare',
+    'next_check_time_label': 'Prossima verifica',
+    'confidence_reason_label': 'Motivazione della confidenza',
+    'data_limitations_label': 'Limiti dei dati',
+    'battle_plan_heading': 'Piano operativo',
+    'ideal_buy_label': 'Ingresso ideale',
+    'secondary_buy_label': 'Ingresso secondario',
+    'stop_loss_label': 'Stop loss',
+    'take_profit_label': 'Obiettivo',
+    'suggested_position_label': 'Dimensione posizione',
+    'entry_plan_label': 'Piano di ingresso',
+    'risk_control_label': 'Controllo del rischio',
+    'checklist_heading': 'Checklist operativa',
+    'failed_checks_heading': 'Controlli non superati',
+    'history_compare_heading': 'Confronto con i segnali storici',
+    'time_label': 'Data',
+    'score_label': 'Punteggio',
+    'advice_label': 'Indicazione',
+    'trend_label': 'Trend',
+    'generated_at_label': 'Generato il',
+    'report_time_label': 'Generato',
+    'no_results': 'Nessun risultato di analisi',
+    'report_title': 'Report di analisi azionaria',
+    'avg_score_label': 'Punteggio medio',
+    'action_points_heading': 'Livelli operativi',
+    'position_advice_heading': 'Indicazioni di posizione',
+    'analysis_model_label': 'Modello',
+    'not_investment_advice': 'Contenuto generato da AI, solo a scopo informativo. Non costituisce consulenza finanziaria.',
+    'details_report_hint': 'Report dettagliato:',
+    'financial_summary_heading': 'Sintesi finanziaria',
+    'report_date_label': 'Data di bilancio',
+    'revenue_label': 'Ricavi',
+    'net_profit_label': 'Utile netto (gruppo)',
+    'operating_cash_flow_label': 'Flusso di cassa operativo',
+    'roe_label': 'ROE',
+    'revenue_yoy_label': 'Ricavi a/a',
+    'net_profit_yoy_label': 'Utile netto a/a',
+    'gross_margin_label': 'Margine lordo',
+    'shareholder_return_heading': 'Remunerazione azionisti',
+    'ttm_cash_dividend_label': 'Dividendo per azione TTM (lordo)',
+    'ttm_event_count_label': 'Stacchi TTM',
+    'ttm_dividend_yield_label': 'Dividend yield TTM',
+    'latest_ex_dividend_label': 'Ultimo stacco',
+    'institutional_flow_heading': 'Flussi istituzionali (3 principali)',
+    'institutional_flow_note': 'Positivo = acquisto netto, negativo = vendita netta; unita: azioni.',
+    'inst_foreign_label': 'Esteri',
+    'inst_trust_label': 'Fondi',
+    'inst_dealer_label': 'Dealer',
+    'inst_total_label': 'Totale (3 principali)',
+    'related_boards_heading': 'Comparti collegati',
+    'industry_boards_heading': 'Settori industriali',
+    'concept_boards_heading': 'Temi di investimento',
+    'board_name_label': 'Comparto',
+    'board_type_label': 'Tipo',
+    'board_status_label': 'Stato',
+    'board_change_pct_label': 'Var. %',
+    'leading_board_label': 'In testa',
+    'lagging_board_label': 'In ritardo',
+    'signal_attribution_heading': 'Attribuzione del segnale',
+    'attribution_weights_label': 'Pesi di attribuzione',
+    'technical_indicators_label': 'Indicatori tecnici',
+    'news_sentiment_label': 'Sentiment delle notizie',
+    'fundamentals_label': 'Fondamentali',
+    'market_conditions_label': 'Condizioni di mercato',
+    'strongest_bullish_signal_label': 'Segnale rialzista piu forte',
+    'strongest_bearish_signal_label': 'Segnale ribassista piu forte',
+    'strategy_synthesis_heading': 'Sintesi delle strategie',
+    'strategy_final_signal_label': 'Segnale finale',
+    'strategy_consensus_level_label': 'Consenso',
+    'strategy_conflict_label': 'Conflitto',
+    'strategy_confidence_label': 'Confidenza',
+    'strategy_summary_label': 'Sintesi',
+    'strategy_supporting_skills_label': 'Strategie a favore',
+    'strategy_opposing_skills_label': 'Strategie contrarie',
+    'strategy_invalid_opinions_label': '{count} strategie aggiuntive non hanno prodotto segnali validi',
+}
+
+
+def _register_italian_layer() -> None:
+    """Aggiunge le voci 'it' a tutte le mappe di localizzazione."""
+    # etichette di interfaccia: parte dall'inglese, sovrascrive con l'italiano
+    _REPORT_LABELS["it"] = {**_REPORT_LABELS["en"], **_IT_LABELS}
+
+    _PLACEHOLDER_BY_LANGUAGE["it"] = "Da definire"
+    _UNKNOWN_BY_LANGUAGE["it"] = "Non disponibile"
+    _NO_DATA_BY_LANGUAGE["it"] = "Dato mancante"
+    _CHIP_UNAVAILABLE_BY_LANGUAGE["it"] = (
+        "Distribuzione dei chip non attiva o fonte dati non disponibile: "
+        "il segnale non e stato considerato."
+    )
+    _GENERIC_STOCK_NAME_BY_LANGUAGE["it"] = "Titolo da confermare"
+
+    for canonical, values in _OPERATION_ADVICE_TRANSLATIONS.items():
+        values["it"] = _IT_OPERATION_ADVICE.get(canonical, values.get("en", canonical))
+    for canonical, values in _TREND_PREDICTION_TRANSLATIONS.items():
+        values["it"] = _IT_TREND_PREDICTION.get(canonical, values.get("en", canonical))
+
+    for mapping in (
+        _CONFIDENCE_LEVEL_TRANSLATIONS,
+        _STRATEGY_SIGNAL_TRANSLATIONS,
+        _CONSENSUS_LEVEL_TRANSLATIONS,
+        _CONFLICT_SEVERITY_TRANSLATIONS,
+        _STRATEGY_SKILL_TRANSLATIONS,
+        _CHIP_HEALTH_TRANSLATIONS,
+        _BIAS_STATUS_TRANSLATIONS,
+    ):
+        for canonical, values in mapping.items():
+            if not isinstance(values, dict):
+                continue
+            values["it"] = _IT_SIMPLE_LEVELS.get(canonical, values.get("en", canonical))
+
+
+_register_italian_layer()
